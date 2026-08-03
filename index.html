@@ -1,11 +1,4 @@
 <!DOCTYPE html>
-<script type="application/json" id="cowork-artifact-meta">
-{
-  "name": "Momentum Adhd Tasks",
-  "schemaVersion": 1,
-  "description": "Momentum — a voice-first, ADHD-friendly personal task manager. Tap the mic (or type) to brain-dump; Claude parses it into structured tasks with auto-breakdown. Shows only a \"Right Now\" task to fight overwhelm, has a visual focus timer for time-blindness, satisfying completion celebrations + streaks for dopamine, and a color theme that changes every day. Tasks persist locally."
-}
-</script>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -63,6 +56,9 @@
   .cap-status .ok { color:var(--good); }
   .cap-status .undo { color:var(--accent-dark); cursor:pointer; text-decoration:underline; margin-left:8px; }
   .thinking { color:var(--muted); }
+  .wake-hint { font-size:12px; color:var(--accent-dark); margin:8px 4px 0; display:flex; align-items:center; gap:6px; font-weight:600; }
+  .wake-dot { width:8px; height:8px; border-radius:50%; background:var(--accent); animation:blink 1.3s infinite; }
+  @keyframes blink { 0%,100%{opacity:1;} 50%{opacity:.25;} }
 
   /* Now card */
   .section-label { font-size:12px; text-transform:uppercase; letter-spacing:.09em; color:var(--muted); margin:22px 4px 8px; font-weight:600; }
@@ -169,7 +165,7 @@
   .now-why b.wl { display:block; font-size:11px; text-transform:uppercase; letter-spacing:.07em; color:var(--accent-dark); font-weight:700; margin-bottom:3px; }
   .why-btn { margin-top:12px; border:1px dashed var(--line); background:transparent; color:var(--accent-dark); border-radius:10px; padding:9px 12px; font-size:13.5px; cursor:pointer; font-weight:600; }
   .why-btn:hover { background:var(--accent-soft); }
-  @media (prefers-reduced-motion: reduce){ .reminder{ transition:none; } }
+  @media (prefers-reduced-motion: reduce){ .reminder{ transition:none; } .wake-dot{ animation:none; } }
 
   /* Talk with Momentum */
   .chat-card { background:var(--card); border-radius:24px; width:440px; max-width:100%; max-height:86vh; display:flex; flex-direction:column; box-shadow:0 22px 64px rgba(0,0,0,.32); overflow:hidden; }
@@ -239,6 +235,7 @@
     </div>
     <div class="cap-hint">Try: “Call the dentist tomorrow, finish the slides by Friday, and buy cat food.”</div>
     <div class="cap-status" id="capStatus"></div>
+    <div class="wake-hint" id="wakeHint"></div>
   </div>
 
   <div id="app"></div>
@@ -258,6 +255,7 @@
       s.notes=s.notes||[]; s.settings=s.settings||{}; if(s.settings.apiKey===undefined) s.settings.apiKey=''; if(s.settings.autoFile===undefined) s.settings.autoFile=false;
       if(s.settings.remindDue===undefined) s.settings.remindDue=true; if(s.settings.focusNudge===undefined) s.settings.focusNudge=true; if(s.settings.focusNudgeMin===undefined) s.settings.focusNudgeMin=20;
       if(s.lastDebrief===undefined) s.lastDebrief=''; if(s.settings.voiceName===undefined) s.settings.voiceName='';
+      if(s.settings.wake===undefined) s.settings.wake=false;
       if(!s.autoFileReset){ s.settings.autoFile=false; s.autoFileReset=true; }
       s.lists = s.lists || [{id:'personal',name:'Personal'},{id:'work',name:'Work'}];
       if(!s.activeList) s.activeList=s.lists[0].id;
@@ -265,7 +263,7 @@
       return s; } } catch(e){}
     return { tasks:[], notes:[], completions:[],
       lists:[{id:'personal',name:'Personal'},{id:'work',name:'Work'}], activeList:'personal', lastDebrief:'', autoFileReset:true,
-      settings:{ sound:true, voice:true, calm:false, autoFile:false, remindDue:true, focusNudge:true, focusNudgeMin:20, voiceName:'', apiKey:'' } };
+      settings:{ sound:true, voice:true, calm:false, autoFile:false, remindDue:true, focusNudge:true, focusNudgeMin:20, voiceName:'', wake:false, apiKey:'' } };
   }
   function save(){ try{ localStorage.setItem(KEY, JSON.stringify(state)); }catch(e){} }
   function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
@@ -335,6 +333,7 @@
     startVoice();
   });
   function startVoice(){
+    stopWake();
     try{
       rec = new SR(); rec.lang='en-US'; rec.interimResults=true; rec.continuous=true;
       listening=true; micBtn.classList.add('live'); setStatus('Listening… take your time — I’ll add it a few seconds after you pause.','thinking');
@@ -347,14 +346,16 @@
           else interim+=e.results[i][0].transcript;
         }
         capInput.value=(finalText+interim).trim();
-        armSilence(); // reset the 5s "are you done?" timer every time you speak
+        armSilence();
       };
       rec.onerror=function(ev){ clearTimeout(silenceT); listening=false; micBtn.classList.remove('live');
-        setStatus(ev.error==='not-allowed'?'Mic permission blocked — you can type instead.':'Didn’t catch that — try again or type it.','thinking'); };
+        setStatus(ev.error==='not-allowed'?'Mic permission blocked — you can type instead.':'Didn’t catch that — try again or type it.','thinking');
+        if(state.settings.wake) setTimeout(ensureWake,900); };
       rec.onend=function(){ clearTimeout(silenceT); listening=false; micBtn.classList.remove('live');
-        var v=capInput.value.trim(); if(v){ submitCapture(v); } };
+        var v=capInput.value.trim(); if(v){ submitCapture(v); }
+        if(state.settings.wake) setTimeout(ensureWake,900); };
       rec.start(); armSilence();
-    }catch(e){ listening=false; micBtn.classList.remove('live'); setStatus('Voice failed to start — type instead.','thinking'); capInput.focus(); }
+    }catch(e){ listening=false; micBtn.classList.remove('live'); setStatus('Voice failed to start — type instead.','thinking'); capInput.focus(); if(state.settings.wake) setTimeout(ensureWake,900); }
   }
 
   document.getElementById('sendBtn').addEventListener('click', function(){
@@ -413,6 +414,29 @@
   function undoLast(){
     state.tasks=state.tasks.filter(function(t){ return lastBatch.indexOf(t.id)<0; });
     lastBatch=[]; save(); render(); setStatus('Undone.','thinking');
+  }
+
+  /* ---------- Wake word: "Hey Momentum" ---------- */
+  var wakeRec=null;
+  function wakeShouldRun(){ return SR && state.settings.wake && !listening && !chatListening && !document.getElementById('chatOverlay'); }
+  function setWakeIndicator(on){ var wh=document.getElementById('wakeHint'); if(!wh) return; wh.innerHTML = on ? '<span class="wake-dot"></span> Listening for “Hey Momentum”…' : ''; }
+  function ensureWake(){ if(wakeShouldRun() && !wakeRec) startWake(); }
+  function startWake(){
+    try{
+      wakeRec=new SR(); wakeRec.lang='en-US'; wakeRec.interimResults=true; wakeRec.continuous=true;
+      wakeRec.onresult=function(e){
+        var txt=''; for(var i=0;i<e.results.length;i++){ txt+=e.results[i][0].transcript+' '; }
+        if(/\bhey\s+moment|\bhey\s+mo\b|\bmomentum\b|\bhey\s+memento|\bhey\s+momento|\bhey\s+moe?ment/i.test(txt)) triggerWake();
+      };
+      wakeRec.onerror=function(){};
+      wakeRec.onend=function(){ wakeRec=null; setTimeout(ensureWake, 700); };
+      wakeRec.start(); setWakeIndicator(true);
+    }catch(e){ wakeRec=null; }
+  }
+  function stopWake(){ setWakeIndicator(false); if(wakeRec){ try{ var r=wakeRec; wakeRec=null; r.onend=null; r.onresult=null; r.stop(); }catch(e){} } }
+  function triggerWake(){
+    stopWake(); softPing(); setStatus('Yes? Listening… go ahead.','thinking');
+    setTimeout(function(){ if(!listening) startVoice(); }, 450);
   }
 
   // AI parse: cowork.askClaude (in Cowork) or Anthropic API (standalone w/ key); graceful on-device fallback
@@ -836,6 +860,7 @@
     function voiceOpts(){ var list=voices.filter(function(v){return /^en/i.test(v.lang);}); if(!list.length) list=voices; if(!list.length) return '<option value="">System default</option>'; return list.map(function(v){ return '<option value="'+esc(v.name)+'"'+(v.name===state.settings.voiceName?' selected':'')+'>'+esc(v.name)+'</option>'; }).join(''); }
     ov.innerHTML='<div class="settings-card"><h3>Settings</h3>'
       +'<div class="opt"><span>Voice (talk & talk-back)</span><span id="sVoice">'+sw(state.settings.voice)+'</span></div>'
+      +'<div class="opt"><span>Hands-free wake word (“Hey Momentum”)</span><span id="sWake">'+sw(state.settings.wake===true)+'</span></div>'
       +'<div class="opt" style="flex-direction:column;align-items:stretch;gap:8px"><span>Talk-back voice</span>'
       +'<div style="display:flex;gap:8px"><select id="sVoiceName" style="flex:1 1 auto;min-width:0;border:1px solid var(--line);border-radius:10px;padding:9px 11px;font-size:14px;background:var(--card);color:var(--text)">'+voiceOpts()+'</select>'
       +'<button id="sVoiceTest" style="border:none;background:var(--accent-soft);color:var(--accent-dark);border-radius:10px;padding:0 14px;font-weight:600;cursor:pointer">Test</button></div></div>'
@@ -852,6 +877,7 @@
       +'<button class="btn btn-primary close" id="sClose">Done</button></div>';
     document.body.appendChild(ov);
     ov.querySelector('#sVoice').onclick=function(){ state.settings.voice=!state.settings.voice; this.innerHTML=sw(state.settings.voice); save(); };
+    ov.querySelector('#sWake').onclick=function(){ state.settings.wake=!(state.settings.wake===true); this.innerHTML=sw(state.settings.wake===true); save(); if(state.settings.wake){ ensureWake(); } else { stopWake(); } };
     var svn=ov.querySelector('#sVoiceName'); if(svn) svn.onchange=function(){ state.settings.voiceName=this.value; save(); };
     var svt=ov.querySelector('#sVoiceTest'); if(svt) svt.onclick=function(){ var prev=state.settings.voice; state.settings.voice=true; speak('Hi — this is your Momentum voice.'); state.settings.voice=prev; };
     ov.querySelector('#sSound').onclick=function(){ state.settings.sound=!state.settings.sound; this.innerHTML=sw(state.settings.sound); save(); };
@@ -1028,6 +1054,7 @@
   }
   function openChat(){
     if(document.getElementById('chatOverlay')) return;
+    stopWake();
     var ov=document.createElement('div'); ov.className='overlay'; ov.id='chatOverlay';
     ov.innerHTML='<div class="chat-card"><div class="chat-head"><h3>Talk with Momentum</h3><button class="rx" id="chX" title="Close">&#10005;</button></div>'
       +'<div class="chat-msgs" id="chMsgs"></div>'
@@ -1044,7 +1071,7 @@
     document.getElementById('chMic').onclick=chatMic;
     setTimeout(function(){ inp.focus(); },50);
   }
-  function closeChat(){ chatHandsfree=false; try{ if(chatRec) chatRec.stop(); }catch(e){} try{ if(window.speechSynthesis) window.speechSynthesis.cancel(); }catch(e){} var ov=document.getElementById('chatOverlay'); if(ov) ov.remove(); }
+  function closeChat(){ chatHandsfree=false; try{ if(chatRec) chatRec.stop(); }catch(e){} try{ if(window.speechSynthesis) window.speechSynthesis.cancel(); }catch(e){} var ov=document.getElementById('chatOverlay'); if(ov) ov.remove(); if(state.settings.wake) setTimeout(ensureWake,700); }
   function renderChat(){
     var box=document.getElementById('chMsgs'); if(!box) return;
     if(!convo.length){ box.innerHTML='<div class="chat-empty">Hi — I’m here.<br>Ask me what to start with, tell me you’re stuck, or just think out loud.</div>'; return; }
@@ -1090,6 +1117,7 @@
   setInterval(checkReminders, 30000);
   document.getElementById('debriefBtn').onclick=openDebrief;
   document.getElementById('chatBtn').onclick=openChat;
+  if(state.settings.wake) ensureWake();
   // Auto-run the debrief on the first open of each day, whatever time you sit down
   if(state.lastDebrief!==todayKey() && state.tasks.some(function(t){return !t.done;})) openDebrief();
   // re-theme if left open past midnight
