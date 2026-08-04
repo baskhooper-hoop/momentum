@@ -35,11 +35,11 @@
   .gear:hover{ color:var(--accent-dark); }
 
   /* Capture */
-  .capture { background:var(--card); border-radius:20px; box-shadow:var(--shadow); padding:14px; margin-bottom:16px; }
+  .capture { background:var(--card); border-radius:18px; box-shadow:var(--shadow); padding:9px 12px; margin-bottom:12px; }
   .cap-row { display:flex; gap:10px; align-items:center; }
   .mic {
-    width:56px; height:56px; flex:0 0 auto; border-radius:50%; border:none; cursor:pointer;
-    background:linear-gradient(135deg,var(--accent),var(--accent2)); color:#fff; font-size:24px;
+    width:46px; height:46px; flex:0 0 auto; border-radius:50%; border:none; cursor:pointer;
+    background:linear-gradient(135deg,var(--accent),var(--accent2)); color:#fff; font-size:20px;
     box-shadow:0 6px 18px color-mix(in srgb,var(--accent) 45%, transparent); transition:transform .12s;
     display:flex; align-items:center; justify-content:center;
   }
@@ -51,8 +51,8 @@
   .send { border:none; background:var(--accent-soft); color:var(--accent-dark); font-weight:600;
     border-radius:12px; padding:10px 14px; cursor:pointer; font-size:14px; }
   .send:hover{ background:color-mix(in srgb,var(--accent) 18%,#fff); }
-  .cap-hint { font-size:12.5px; color:var(--muted); margin:10px 4px 2px; }
-  .cap-status { font-size:13.5px; margin:8px 4px 0; min-height:18px; }
+  .cap-hint { font-size:11.5px; color:var(--muted); margin:6px 4px 0; }
+  .cap-status { font-size:13.5px; margin:6px 4px 0; min-height:0; }
   .cap-status .ok { color:var(--good); }
   .cap-status .undo { color:var(--accent-dark); cursor:pointer; text-decoration:underline; margin-left:8px; }
   .thinking { color:var(--muted); }
@@ -61,17 +61,19 @@
   @keyframes blink { 0%,100%{opacity:1;} 50%{opacity:.25;} }
 
   /* Now card */
-  .section-label { font-size:12px; text-transform:uppercase; letter-spacing:.09em; color:var(--muted); margin:22px 4px 8px; font-weight:600; }
+  .section-label { font-size:12px; text-transform:uppercase; letter-spacing:.09em; color:var(--muted); margin:14px 4px 8px; font-weight:600; }
   .now {
     background:linear-gradient(160deg, color-mix(in srgb,var(--accent) 10%,#fff), var(--card));
     border:1px solid color-mix(in srgb,var(--accent) 22%,#fff);
-    border-radius:22px; padding:20px; box-shadow:var(--shadow);
+    border-radius:24px; padding:30px 26px; box-shadow:0 12px 34px rgba(30,40,80,.11); min-height:210px;
   }
-  .now .lead { display:flex; align-items:flex-start; gap:12px; }
+  .now .lead { display:flex; align-items:flex-start; gap:14px; }
   .prio-dot { width:12px; height:12px; border-radius:50%; margin-top:8px; flex:0 0 auto; }
   .prio-high{ background:#e5484d; } .prio-med{ background:var(--accent); } .prio-low{ background:#9aa3b5; }
-  .now h2 { font-size:22px; margin:0; letter-spacing:-.02em; }
-  .now .meta { font-size:13px; color:var(--muted); margin-top:6px; display:flex; gap:12px; flex-wrap:wrap; }
+  .now h2 { font-size:29px; margin:0; letter-spacing:-.02em; line-height:1.2; }
+  .now .meta { font-size:14.5px; color:var(--muted); margin-top:10px; display:flex; gap:14px; flex-wrap:wrap; }
+  .now .prio-dot { margin-top:12px; }
+  .now-actions .btn { padding:14px 18px; font-size:15px; }
   .steps { margin:14px 0 4px; padding:0; list-style:none; }
   .steps li { display:flex; align-items:center; gap:10px; padding:7px 0; font-size:15px; border-top:1px solid var(--line); }
   .steps li:first-child{ border-top:none; }
@@ -165,6 +167,17 @@
   .now-why b.wl { display:block; font-size:11px; text-transform:uppercase; letter-spacing:.07em; color:var(--accent-dark); font-weight:700; margin-bottom:3px; }
   .why-btn { margin-top:12px; border:1px dashed var(--line); background:transparent; color:var(--accent-dark); border-radius:10px; padding:9px 12px; font-size:13.5px; cursor:pointer; font-weight:600; }
   .why-btn:hover { background:var(--accent-soft); }
+
+  /* Manual progress marks */
+  .progress-row { margin-top:18px; padding-top:16px; border-top:1px solid var(--line); }
+  .progress-row .pr-label { font-size:12px; text-transform:uppercase; letter-spacing:.07em; color:var(--muted); font-weight:700; }
+  .pips { display:flex; flex-wrap:wrap; gap:9px; align-items:center; margin:11px 0 12px; }
+  .pip { width:28px; height:28px; border-radius:50%; border:none; background:linear-gradient(135deg,var(--accent),var(--accent2)); cursor:pointer; transition:transform .1s; box-shadow:0 2px 7px color-mix(in srgb,var(--accent) 35%,transparent); }
+  .pip:active { transform:scale(.88); }
+  .pips .none { color:var(--muted); font-size:13px; }
+  .pr-add { border:2px dashed color-mix(in srgb,var(--accent) 45%,#fff); background:transparent; color:var(--accent-dark); border-radius:12px; padding:10px 15px; font-size:14px; font-weight:700; cursor:pointer; }
+  .pr-add:hover { background:var(--accent-soft); }
+  .task .prog { font-size:11px; color:var(--accent-dark); font-weight:700; margin-top:2px; }
   @media (prefers-reduced-motion: reduce){ .reminder{ transition:none; } .wake-dot{ animation:none; } }
 
   /* Talk with Momentum */
@@ -267,6 +280,33 @@
   }
   function save(){ try{ localStorage.setItem(KEY, JSON.stringify(state)); }catch(e){} }
   function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+
+  /* ---------- Back up / restore ---------- */
+  function exportBackup(){
+    try{
+      var blob=new Blob([JSON.stringify(state)],{type:'application/json'});
+      var url=URL.createObjectURL(blob);
+      var a=document.createElement('a'); a.href=url; a.download='momentum-backup-'+todayKey()+'.json';
+      document.body.appendChild(a); a.click(); a.remove(); setTimeout(function(){ URL.revokeObjectURL(url); },1500);
+      toast('Backup downloaded.');
+    }catch(e){ alert('Couldn’t create the backup file.'); }
+  }
+  function importBackup(file, ov){
+    var r=new FileReader();
+    r.onload=function(){
+      try{
+        var s=JSON.parse(r.result);
+        if(!s || !Array.isArray(s.tasks)) throw new Error('bad');
+        if(!confirm('Restore '+s.tasks.length+' task(s) from this backup? This replaces your current list.')) return;
+        s.notes=s.notes||[]; s.completions=s.completions||[]; s.settings=s.settings||state.settings;
+        s.lists=(s.lists&&s.lists.length)?s.lists:state.lists; if(!s.activeList) s.activeList=s.lists[0].id;
+        if(s.lastDebrief===undefined) s.lastDebrief=''; if(s.autoFileReset===undefined) s.autoFileReset=true;
+        s.tasks.forEach(function(t){ if(!t.list) t.list=s.activeList; if(t.progress===undefined) t.progress=0; });
+        state=s; save(); render(); if(ov) ov.remove(); toast('Restored '+s.tasks.length+' task'+(s.tasks.length===1?'':'s')+'.');
+      }catch(e){ alert('Hmm, that file didn’t look like a Momentum backup.'); }
+    };
+    r.readAsText(file);
+  }
 
   /* ---------- Daily theme ---------- */
   function dayOfYear(d){ var s=new Date(d.getFullYear(),0,0); return Math.floor((d-s)/86400000); }
@@ -396,7 +436,7 @@
         priority:['low','med','high'].indexOf(t.priority)>=0?t.priority:'med',
         microSteps:Array.isArray(t.microSteps)?t.microSteps.slice(0,5):[],
         why:(t.why||'').trim(),
-        microDone:[], list:lst, done:false, later:false, createdAt:Date.now() };
+        microDone:[], progress:0, list:lst, done:false, later:false, createdAt:Date.now() };
       if(!task.why) task.why=fallbackWhy(task);
       state.tasks.push(task); added.push(task.id); byList[lst]=(byList[lst]||0)+1;
     });
@@ -640,7 +680,9 @@
         +'<button class="btn btn-good" data-done="'+focus.id+'">&#10003; Done</button>'
         +'<button class="btn btn-ghost" data-later="'+focus.id+'">Not now</button>'
         +'<button class="btn btn-ghost" data-move="'+focus.id+'" title="Move to '+esc(otherListName(focus.list))+'">&#8644; '+esc(otherListName(focus.list))+'</button>'
-        +'</div></div>';
+        +'</div>'
+        + progressHTML(focus)
+        +'</div>';
     }
 
     // stats
@@ -682,6 +724,7 @@
     return '<div class="task"><div class="tick" data-done="'+t.id+'" title="Complete"></div>'
       +'<div class="body"><div class="t">'+esc(t.title)+'</div>'
       +((due||t.timeEstimateMin)?'<div class="m">'+(due?(due.overdue?'⚠ ':'')+esc(due.label):'')+(due&&t.timeEstimateMin?' · ':'')+(t.timeEstimateMin?'~'+t.timeEstimateMin+'m':'')+'</div>':'')
+      +(t.progress?'<div class="prog">&#9679; '+t.progress+' progress</div>':'')
       +'</div><div class="mini">'
       + (t.later?'<button data-now="'+t.id+'">Do now</button>':'<button data-later="'+t.id+'">Later</button>')
       +'<button data-timer="'+t.id+'">&#9654;</button>'
@@ -690,6 +733,16 @@
       +'</div></div>';
   }
   function esc(s){ return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+
+  function progressHTML(t){
+    var p=t.progress||0, pips='';
+    for(var i=0;i<p;i++) pips+='<span class="pip" data-pip="'+t.id+'" title="Tap to remove one"></span>';
+    return '<div class="progress-row"><span class="pr-label">Progress</span>'
+      +'<div class="pips">'+(p?pips:'<span class="none">No marks yet — tap below each time you chip away at this.</span>')+'</div>'
+      +'<button class="pr-add" data-prog="'+t.id+'">+ I made progress</button></div>';
+  }
+  function addProgress(id){ var t=find(id); if(!t) return; t.progress=(t.progress||0)+1; save(); render(); toast('Progress! ('+t.progress+' so far)'); if(state.settings.sound) softPing(); }
+  function removeProgress(id){ var t=find(id); if(!t) return; t.progress=Math.max(0,(t.progress||0)-1); save(); render(); }
 
   function notesHTML(){
     var items=state.notes.map(function(n){
@@ -745,6 +798,8 @@
     app.querySelectorAll('[data-timer]').forEach(function(el){ el.onclick=function(){ openTimer(el.getAttribute('data-timer')); }; });
     app.querySelectorAll('[data-move]').forEach(function(el){ el.onclick=function(){ moveTask(el.getAttribute('data-move')); }; });
     app.querySelectorAll('[data-why]').forEach(function(el){ el.onclick=function(){ generateWhy(el.getAttribute('data-why')); }; });
+    app.querySelectorAll('[data-prog]').forEach(function(el){ el.onclick=function(){ addProgress(el.getAttribute('data-prog')); }; });
+    app.querySelectorAll('[data-pip]').forEach(function(el){ el.onclick=function(){ removeProgress(el.getAttribute('data-pip')); }; });
     var bm=app.querySelector('[data-bulkmove]'); if(bm) bm.onclick=bulkMoveAll;
     app.querySelectorAll('[data-step]').forEach(function(el){ el.onclick=function(){ toggleStep(parseInt(el.getAttribute('data-step'),10)); }; });
     var na=document.getElementById('noteAdd'), ni=document.getElementById('noteInput');
@@ -873,6 +928,11 @@
       +'<div class="opt" style="flex-direction:column;align-items:stretch;gap:7px"><span>Anthropic API key</span>'
       +'<input id="sKey" type="password" placeholder="sk-ant-…" value="'+esc(state.settings.apiKey||'')+'" style="border:1px solid var(--line);border-radius:10px;padding:9px 11px;font-size:14px;outline:none">'
       +'<span style="font-size:12px;color:var(--muted);font-weight:400">Stored only in this browser. Powers voice + AI parsing in the standalone version. Get one at console.anthropic.com → API Keys.</span></div>'
+      +'<div class="opt" style="flex-direction:column;align-items:stretch;gap:8px"><span>Back up / restore your tasks</span>'
+      +'<div style="display:flex;gap:8px"><button id="sExport" style="flex:1 1 0;border:none;background:var(--accent-soft);color:var(--accent-dark);border-radius:10px;padding:10px;font-weight:600;cursor:pointer">Download backup</button>'
+      +'<button id="sImport" style="flex:1 1 0;border:1px solid var(--line);background:transparent;color:var(--text);border-radius:10px;padding:10px;font-weight:600;cursor:pointer">Restore from file</button></div>'
+      +'<input id="sImportFile" type="file" accept="application/json,.json" style="display:none">'
+      +'<span style="font-size:12px;color:var(--muted);font-weight:400">Download saves all your tasks to a file. Keep it safe — restore it here anytime, even on another device or browser.</span></div>'
       +'<div class="opt"><span>Clear all tasks</span><button class="mini" style="background:#fdeaea;color:#c0343a;border-radius:9px;padding:6px 10px;border:none;cursor:pointer" id="sClear">Clear</button></div>'
       +'<button class="btn btn-primary close" id="sClose">Done</button></div>';
     document.body.appendChild(ov);
@@ -887,6 +947,10 @@
     ov.querySelector('#sFocus').onclick=function(){ state.settings.focusNudge=(state.settings.focusNudge===false); this.innerHTML=sw(state.settings.focusNudge!==false); save(); if(state.settings.focusNudge!==false){ lastFocusNudge=Date.now(); maybeAskNotify(); } };
     ov.querySelectorAll('[data-iv]').forEach(function(b){ b.onclick=function(){ state.settings.focusNudgeMin=parseInt(b.getAttribute('data-iv'),10); save(); ov.querySelectorAll('[data-iv]').forEach(function(x){ x.classList.toggle('on', x===b); }); }; });
     ov.querySelector('#sKey').oninput=function(){ state.settings.apiKey=this.value.trim(); save(); };
+    ov.querySelector('#sExport').onclick=exportBackup;
+    var impF=ov.querySelector('#sImportFile');
+    ov.querySelector('#sImport').onclick=function(){ impF.click(); };
+    impF.onchange=function(){ var f=impF.files&&impF.files[0]; if(f) importBackup(f, ov); };
     ov.querySelector('#sClear').onclick=function(){ if(confirm('Clear all tasks? This can’t be undone.')){ state.tasks=[]; save(); render(); ov.remove(); } };
     ov.querySelector('#sClose').onclick=function(){ ov.remove(); };
     ov.onclick=function(e){ if(e.target===ov) ov.remove(); };
@@ -1045,7 +1109,7 @@
       var task={ id:uid(), title:(t.title||'').trim(), dueAt:t.dueAt||null, timeEstimateMin:t.timeEstimateMin||null,
         priority:['low','med','high'].indexOf(t.priority)>=0?t.priority:'med',
         microSteps:Array.isArray(t.microSteps)?t.microSteps.slice(0,5):[], why:(t.why||'').trim(),
-        microDone:[], list:lst, done:false, later:false, createdAt:Date.now() };
+        microDone:[], progress:0, list:lst, done:false, later:false, createdAt:Date.now() };
       if(!task.title) return;
       if(!task.why) task.why=fallbackWhy(task);
       state.tasks.push(task); added.push(task.id);
