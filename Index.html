@@ -17,7 +17,8 @@
     background:var(--bg); color:var(--text); line-height:1.5;
     -webkit-font-smoothing:antialiased;
   }
-  .wrap { max-width:640px; margin:0 auto; padding:18px 16px 120px; }
+  .wrap { max-width:740px; margin:0 auto; padding:18px 16px 120px; }
+  .wrap.parallel-active { max-width:1200px; }
   /* Header */
   header { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:14px; }
   .brand { display:flex; align-items:center; gap:12px; min-width:0; }
@@ -224,11 +225,14 @@
   .parallel-toggle { border:1px solid var(--line); background:var(--card); color:var(--muted); border-radius:10px; padding:7px 13px; font-size:13px; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:6px; box-shadow:var(--shadow); transition:.1s; }
   .parallel-toggle:hover { color:var(--accent-dark); border-color:var(--accent); }
   .parallel-toggle.on { background:var(--accent); color:#fff; border-color:transparent; }
-  .parallel-row { display:flex; gap:12px; align-items:stretch; overflow-x:auto; padding-bottom:4px; }
-  .parallel-row .now { flex:2 1 0; min-width:280px; position:relative; }
-  .parallel-slot-wrap { flex:1 1 0; min-width:180px; max-width:260px; display:flex; flex-direction:column; }
+  .parallel-row { display:flex; gap:16px; align-items:stretch; width:100%; }
+  .parallel-left-slots { display:flex; gap:16px; flex:1 1 0; min-width:0; }
+  .parallel-slot-wrap { flex:1 1 0; min-width:0; display:flex; flex-direction:column; }
   .parallel-slot-wrap .now { flex:1 1 auto; min-width:0; max-width:none; }
-  .parallel-slot { flex:1 1 auto; background:var(--card); border:2px dashed var(--line); border-radius:24px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; padding:24px 16px; cursor:pointer; color:var(--muted); font-size:14px; transition:.12s; min-height:160px; }
+  .parallel-anchor-col { flex:2 1 0; min-width:0; display:flex; flex-direction:column; gap:10px; }
+  .parallel-anchor-col .capture { margin-bottom:0; }
+  .parallel-anchor-col .now { flex:1 1 auto; }
+  .parallel-slot { flex:1 1 auto; background:var(--card); border:2px dashed var(--line); border-radius:24px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; padding:24px 16px; cursor:pointer; color:var(--muted); font-size:14px; transition:.12s; }
   .parallel-slot:hover { border-color:var(--accent); color:var(--accent-dark); background:var(--accent-soft); }
   .parallel-slot .slot-icon { font-size:26px; }
   .parallel-slot .slot-hint { font-size:12px; text-align:center; line-height:1.4; }
@@ -720,15 +724,18 @@
     if(act.length){ html+='<div style="text-align:right;margin:0 2px 4px"><button class="bulk-move" data-bulkmove>&#8644; Move all to '+esc(otherListName(state.activeList))+'</button></div>'; }
 
     if(parallelMode){
-      html+='<div class="section-label">Parallel mode — up to 3 tasks at once</div>';
+      // Clean up slots
       parallelSlots=parallelSlots.map(function(id){
         if(!id) return null;
         var t=find(id); return (t&&!t.done)?id:null;
       });
       var anchorId=focus?focus.id:null;
       parallelSlots=parallelSlots.map(function(id){ return id===anchorId?null:id; });
+
       html+='<div class="parallel-row">';
-      // Left side: two smaller slot cards
+
+      // Left: two equal slot cards, full height
+      html+='<div class="parallel-left-slots">';
       for(var si=0;si<2;si++){
         var slotId=parallelSlots[si];
         var st=slotId?find(slotId):null;
@@ -743,12 +750,23 @@
         }
         html+='</div>';
       }
-      // Right side: the main anchor card, full size, unchanged
+      html+='</div>';
+
+      // Right: add bar on top, anchor card below — same column
+      html+='<div class="parallel-anchor-col">';
+      html+='<div class="capture" style="margin-bottom:0">'
+        +'<div class="cap-row">'
+        +'<button class="mic" id="micBtn2" title="Tap and talk">&#127908;</button>'
+        +'<input class="cap-input" id="capInput2" placeholder="Add to '+esc(state.activeList)+' — tap the mic or type…" autocomplete="off">'
+        +'<button class="send" id="sendBtn2">Add</button>'
+        +'</div></div>';
       if(focus){
         html+=nowCardHTML(focus,true,-1);
       } else {
-        html+='<div class="now"><div class="empty"><div class="big">&#127793;</div>All clear!</div></div>';
+        html+='<div class="now" style="flex:1"><div class="empty"><div class="big">&#127793;</div>All clear!</div></div>';
       }
+      html+='</div>';
+
       html+='</div>';
     } else {
       html+='<div class="section-label">Right now — just this one</div>';
@@ -885,8 +903,14 @@
     var sa=document.getElementById('showAll'); if(sa) sa.onclick=function(){ var w=document.getElementById('allWrap'); w.classList.toggle('hidden'); sa.innerHTML=(w.classList.contains('hidden')?'&#9662; Show':'&#9652; Hide')+' everything else ('+(w.children.length)+')'; };
     // Parallel slot close buttons
     app.querySelectorAll('[data-parclose]').forEach(function(el){ el.onclick=function(e){ e.stopPropagation(); var i=parseInt(el.getAttribute('data-parclose'),10); parallelSlots[i]=null; render(); }; });
-    // Parallel slot pick: open a task picker
+    // Parallel slot pick
     app.querySelectorAll('[data-pickslot]').forEach(function(el){ el.onclick=function(){ openSlotPicker(parseInt(el.getAttribute('data-pickslot'),10)); }; });
+    // Parallel mode duplicate add bar
+    var sb2=document.getElementById('sendBtn2'), ci2=document.getElementById('capInput2');
+    if(sb2) sb2.onclick=function(){ var v=ci2.value.trim(); if(v) submitCapture(v); };
+    if(ci2) ci2.onkeydown=function(e){ if(e.key==='Enter'){ var v=ci2.value.trim(); if(v) submitCapture(v); } };
+    var mb2=document.getElementById('micBtn2');
+    if(mb2) mb2.onclick=function(){ capInput.focus(); micBtn.click(); };
   }
 
   /* ---------- Slot picker overlay ---------- */
@@ -1300,6 +1324,8 @@
     parallelMode=!parallelMode;
     if(!parallelMode){ parallelSlots=[null,null]; }
     this.classList.toggle('on', parallelMode);
+    document.querySelector('.wrap').classList.toggle('parallel-active', parallelMode);
+    document.querySelector('.capture').style.display = parallelMode ? 'none' : '';
     this.title=parallelMode?'Back to single focus view':'Show up to 3 tasks side by side';
     render();
   };
