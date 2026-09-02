@@ -395,30 +395,40 @@
     if(listening){ try{rec.stop();}catch(e){} return; }
     startVoice();
   });
+  function activeInputEls(){
+    var i2=document.getElementById('capInput2'), s2=document.getElementById('capStatus2'), m2=document.getElementById('micBtn2');
+    if(parallelMode && i2 && i2.offsetParent!==null){ return {input:i2, status:s2, mic:m2}; }
+    return {input:capInput, status:capStatus, mic:micBtn};
+  }
+  function setStatusOn(statusEl, html, cls){ if(statusEl) statusEl.innerHTML = cls? '<span class="'+cls+'">'+html+'</span>' : html; }
   function startVoice(){
     stopWake();
+    var els=activeInputEls();
+    var curInput=els.input, curStatus=els.status, curMic=els.mic;
     try{
       rec = new SR(); rec.lang='en-US'; rec.interimResults=true; rec.continuous=true;
-      listening=true; micBtn.classList.add('live'); setStatus('Listening… take your time — I’ll add it a few seconds after you pause.','thinking');
-      var finalText='', silenceT=null;
-      var armSilence=function(){ clearTimeout(silenceT); silenceT=setTimeout(function(){ try{ rec.stop(); }catch(e){} }, 7000); };
+      listening=true; if(curMic) curMic.classList.add('live'); setStatusOn(curStatus, '\uD83D\uDD0A Hearing you\u2026 speak freely, I\'ll add it 3s after you stop.','thinking');
+      var finalText='', silenceT=null, heardAny=false;
+      var armSilence=function(){ clearTimeout(silenceT); silenceT=setTimeout(function(){ try{ rec.stop(); }catch(e){} }, 3000); };
       rec.onresult=function(e){
         var interim='';
         for(var i=e.resultIndex;i<e.results.length;i++){
           if(e.results[i].isFinal) finalText+=e.results[i][0].transcript+' ';
           else interim+=e.results[i][0].transcript;
         }
-        capInput.value=(finalText+interim).trim();
+        curInput.value=(finalText+interim).trim();
+        if(curInput.value && !heardAny){ heardAny=true; }
+        if(heardAny) setStatusOn(curStatus, '\uD83D\uDD0A <b>"'+esc(curInput.value)+'"</b>','thinking');
         armSilence();
       };
-      rec.onerror=function(ev){ clearTimeout(silenceT); listening=false; micBtn.classList.remove('live');
-        setStatus(ev.error==='not-allowed'?'Mic permission blocked — you can type instead.':'Didn’t catch that — try again or type it.','thinking');
+      rec.onerror=function(ev){ clearTimeout(silenceT); listening=false; if(curMic) curMic.classList.remove('live');
+        setStatusOn(curStatus, ev.error==='not-allowed'?'Mic permission blocked \u2014 you can type instead.':'Didn\u2019t catch that \u2014 try again or type it.','thinking');
         if(state.settings.wake) setTimeout(ensureWake,900); };
-      rec.onend=function(){ clearTimeout(silenceT); listening=false; micBtn.classList.remove('live');
-        var v=capInput.value.trim(); if(v){ submitCapture(v); }
+      rec.onend=function(){ clearTimeout(silenceT); listening=false; if(curMic) curMic.classList.remove('live');
+        var v=curInput.value.trim(); if(v){ submitCapture(v); }
         if(state.settings.wake) setTimeout(ensureWake,900); };
       rec.start(); armSilence();
-    }catch(e){ listening=false; micBtn.classList.remove('live'); setStatus('Voice failed to start — type instead.','thinking'); capInput.focus(); if(state.settings.wake) setTimeout(ensureWake,900); }
+    }catch(e){ listening=false; if(curMic) curMic.classList.remove('live'); setStatusOn(curStatus, 'Voice failed to start \u2014 type instead.','thinking'); curInput.focus(); if(state.settings.wake) setTimeout(ensureWake,900); }
   }
 
   document.getElementById('sendBtn').addEventListener('click', function(){
@@ -759,7 +769,7 @@
         +'<button class="mic" id="micBtn2" title="Tap and talk">&#127908;</button>'
         +'<input class="cap-input" id="capInput2" placeholder="Add to '+esc(state.activeList)+' — tap the mic or type…" autocomplete="off">'
         +'<button class="send" id="sendBtn2">Add</button>'
-        +'</div></div>';
+        +'</div><div class="cap-status" id="capStatus2"></div></div>';
       if(focus){
         html+=nowCardHTML(focus,true,-1);
       } else {
@@ -910,7 +920,11 @@
     if(sb2) sb2.onclick=function(){ var v=ci2.value.trim(); if(v) submitCapture(v); };
     if(ci2) ci2.onkeydown=function(e){ if(e.key==='Enter'){ var v=ci2.value.trim(); if(v) submitCapture(v); } };
     var mb2=document.getElementById('micBtn2');
-    if(mb2) mb2.onclick=function(){ capInput.focus(); micBtn.click(); };
+    if(mb2) mb2.onclick=function(){
+      if(!SR || !state.settings.voice){ var s2=document.getElementById('capStatus2'); if(s2) s2.innerHTML='<span class="thinking">'+(!SR?'Voice isn\u2019t available here \u2014 just type and press Add.':'Voice is off (turn it on in settings).')+'</span>'; return; }
+      if(listening){ try{rec.stop();}catch(e){} return; }
+      startVoice();
+    };
   }
 
   /* ---------- Slot picker overlay ---------- */
@@ -1303,7 +1317,7 @@
       chatListening=true; chatHandsfree=true;
       var b=document.getElementById('chMic'); if(b) b.classList.add('live');
       var inp=document.getElementById('chInput'); var finalText='', silenceT=null;
-      var armSilence=function(){ clearTimeout(silenceT); silenceT=setTimeout(function(){ try{ chatRec.stop(); }catch(e){} }, 7000); };
+      var armSilence=function(){ clearTimeout(silenceT); silenceT=setTimeout(function(){ try{ chatRec.stop(); }catch(e){} }, 3000); };
       chatRec.onresult=function(e){ var interim=''; for(var i=e.resultIndex;i<e.results.length;i++){ if(e.results[i].isFinal) finalText+=e.results[i][0].transcript+' '; else interim+=e.results[i][0].transcript; } if(inp) inp.value=(finalText+interim).trim(); armSilence(); };
       chatRec.onerror=function(ev){ clearTimeout(silenceT); chatListening=false; chatHandsfree=false; var b2=document.getElementById('chMic'); if(b2) b2.classList.remove('live'); };
       chatRec.onend=function(){ clearTimeout(silenceT); chatListening=false; var b2=document.getElementById('chMic'); if(b2) b2.classList.remove('live'); var v=inp?inp.value.trim():''; if(v){ inp.value=''; sendChat(v); } };
