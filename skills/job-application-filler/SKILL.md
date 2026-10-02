@@ -1,5 +1,5 @@
 ---
-name: "workday-job-application-filler"
+name: "job-application-filler"
 description: "Fill out an online job application (Workday, Avature, Greenhouse, iCIMS, or any other ATS) for Chris Wood using Claude in Chrome, rewriting weak auto-filled role descriptions into strong ones, drafting the 'why this role' answer for approval at Review, and stopping before final Submit."
 ---
 
